@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tienda con Admin y Cantidades + Firebase</title>
+
+  <style>
+    /* Fuentes y base */
+    body {
+      font-family: 'Montserrat', Arial, sans-serif;
+      margin: 0; padding: 0;
+      background:
+        linear-gradient(rgba(255, 192, 203, 0.4), rgba(255, 192, 203, 0.4)),
+        url('https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed;
+      background-size: cover;
+      color: #4a2c6b;
+      min-height: 100vh;
+    }
+
+    .contenedor {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 30px 40px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(255, 192, 203, 0.7);
+      color: #4a2c6b;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-sizing: border-box;
+    }
+
+    /* Header con título y filtro */
+    .header-admin {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .header-admin h1 {
+      margin: 0;
+      font-weight: 700;
+      font-size: 2rem;
+    }
+    .filtros {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #filtro-categorias {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1.5px solid #c71585;
+      font-weight: 600;
+      background: white;
+      color: #4a2c6b;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+    }
+    #filtro-categorias:hover,
+    #filtro-categorias:focus {
+      border-color: #a21068;
+      outline: none;
+    }
+
+    /* Grilla productos */
+    .grid-articulos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+      gap: 20px;
+    }
+
+    .articulo {
+      background: rgba(255,255,255,0.9);
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 0 10px rgba(199,21,133,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: transform 0.15s ease;
+    }
+    .articulo:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 18px rgba(199,21,133,0.6);
+    }
+    .articulo img {
+      max-width: 100%;
+      max-height: 150px;
+      object-fit: contain;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      user-select: none;
+    }
+    .articulo h3 {
+      font-weight: 700;
+      margin: 8px 0;
+      color: #6a2c82;
+      min-height: 48px;
+    }
+    .precio {
+      font-weight: 600;
+      color: #c71585;
+      margin: 5px 0 10px 0;
+      font-size: 1.1rem;
+    }
+
+    /* Estado stock */
+    .stock-visible {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #3a7d44;
+      margin-bottom: 10px;
+    }
+    .sin-stock {
+      color: #b53030;
+    }
+
+    /* Botones */
+    button.boton, .btn-stock-admin {
+      cursor: pointer;
+      background-color: #c71585;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    button.boton:disabled {
+      background-color: #d9a3c7;
+      cursor: not-allowed;
+    }
+    button.boton:hover:not(:disabled),
+    .btn-stock-admin:hover {
+      background-color: #a21068;
+    }
+    .btn-stock-admin {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      width: 100%;
+    }
+
+    /* Input precio admin */
+    .input-precio-admin {
+      width: 70px;
+      font-weight: 600;
+      padding: 4px 6px;
+      border: 2px solid #c71585;
+      border-radius: 8px;
+      text-align: center;
+      color: #6a2c82;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      user-select: none;
+      display: inline-block;
+      transition: border-color 0.3s ease;
+    }
+    .input-precio-admin:focus {
+      border-color: #a21068;
+      outline: none;
+    }
+
+    /* Paginación */
+    #paginacion {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #paginacion button {
+      background: #c71585;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    #paginacion button[disabled] {
+      background: #d9a3c7;
+      cursor: default;
+    }
+    #paginacion button:hover:not([disabled]) {
+      background-color: #a21068;
+    }
+
+   .carrito-fijo {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #c71585;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 30px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 600px) {
+  .carrito-fijo {
+    bottom: 80px; /* ⬅ lo subimos para que no tape la paginación */
+    right: 15px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    border-radius: 24px;
+  }
+}
+
+    /* Lista carrito */
+    .carrito-lista {
+      position: fixed;
+      top: 70px;
+      right: 25px;
+      width: 320px;
+      max-height: 80vh;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(199, 21, 133, 0.8);
+      padding: 15px 18px 20px 18px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1100;
+      user-select: none;
+    }
+    .carrito-lista strong {
+      font-size: 1.1rem;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .carrito-lista ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 12px 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .carrito-lista ul li {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 600;
+      color: #4a2c6b;
+    }
+    .carrito-lista ul li select {
+      border-radius: 6px;
+      border: 1.5px solid #c71585;
+      padding: 2px 6px;
+      font-weight: 600;
+      color: #4a2c6b;
+      cursor: pointer;
+    }
+    .carrito-lista ul li button {
+      background: #b53030;
+      border: none;
+      color: white;
+      font-weight: 700;
+      border-radius: 6px;
+      padding: 2px 7px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .carrito-lista ul li button:hover {
+      background: #8a2525;
+    }
+    .carrito-lista p {
+      font-weight: 700;
+      font-size: 1.15rem;
+      margin-bottom: 12px;
+      color: #6a2c82;
+    }
+    .btn-whatsapp {
+      background-color: #25d366;
+      color: white;
+      border: none;
+      padding: 12px 22px;
+      width: 100%;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .btn-whatsapp:disabled {
+      background-color: #a6d9b6;
+      cursor: not-allowed;
+    }
+    .btn-whatsapp:hover:not(:disabled) {
+      background-color: #1ebe58;
+    }
+    .cerrar {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 1.6rem;
+      background: transparent;
+      border: none;
+      color: #b53030;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.3s ease;
+    }
+    .cerrar:hover {
+      color: #8a2525;
+    }
+
+    /* Botón modo admin */
+    #btnAdminToggle {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: #c71585;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.85rem;
+      box-shadow: 0 6px 14px rgba(199, 21, 133, 0.7);
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      z-index: 1100;
+      user-select: none;
+    }
+    #btnAdminToggle:hover {
+      background-color: #a21068;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .contenedor {
+        padding: 20px 15px;
+        margin: 20px 10px;
+      }
+      .grid-articulos {
+        grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+      }
+      .articulo img {
+        max-height: 120px;
+      }
+      .header-admin {
+        flex-direction: column;
+        gap: 10px;
+      }
+      #btnAdminToggle {
+        bottom: 15px;
+        left: 15px;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+      }
+      .carrito-lista {
+        width: 90vw;
+        right: 5vw;
+        max-height: 70vh;
+      }
+      #paginacion button {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* POPUP BIENVENIDA */
+    #popup-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    #popup-content {
+      position: relative;
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      max-width: 600px;
+      max-height: 90%;
+      overflow: auto;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #popup-content img {
+      width: 45%;
+      max-width: 270px;
+      border-radius: 10px;
+      object-fit: contain;
+    }
+    #popup-content button {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #000;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    #popup-content button:hover {
+      color: #a21068;
+    }
+
+    /* Popup móvil: imágenes apiladas vertical */
+    @media (max-width: 600px) {
+      #popup-content {
+        max-width: 90%;
+        flex-direction: column !important;
+        align-items: center;
+        padding: 15px;
+      }
+      #popup-content img {
+        width: 90% !important;
+        max-width: none !important;
+        margin-bottom: 12px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- POP-UP de Bienvenida -->
+  <div id="popup-overlay">
+    <div id="popup-content">
+      <button onclick="cerrarPopup()">✖</button>
+      <img src="https://i.imgur.com/vrVFMBd.jpeg" alt="Bienvenida 1" />
+      <img src="https://i.imgur.com/bzxz9mQ.jpeg" alt="Bienvenida 2" />
+    </div>
+  </div>
+
+  <div class="contenedor" id="contenedor">
+    <div class="header-admin">
+      <h1>ARMELI PRODUCTOS</h1>
+      <div class="filtros">
+        <label for="filtro-categorias">Categoría:</label>
+        <select id="filtro-categorias">
+          <option value="todos">Todos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-articulos" id="productosContainer">
+      <!-- Productos renderizados aquí -->
+    </div>
+
+    <div id="paginacion"></div>
+  </div>
+
+  <div class="carrito-lista" id="carritoLista">
+    <button class="cerrar" onclick="toggleCarrito()">×</button>
+    <strong>Carrito:</strong>
+    <ul id="listaItems"></ul>
+    <p><strong>Total:</strong> $<span id="totalItems">0</span></p>
+    <button id="btnPedirWhatsApp" class="btn-whatsapp" disabled onclick="pedirWhatsApp()">Pedir por WhatsApp</button>
+  </div>
+
+  <a class="carrito-fijo" onclick="toggleCarrito()">
+    🛒 Carrito (<span id="contador">0</span>)
+  </a>
+
+  <button id="btnAdminToggle">modo administrador</button>
+
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <!-- Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    // Tu configuración Firebase:
+    const firebaseConfig = {
+      apiKey: "AIzaSyBo9mR_s_uTcNoNApG8BPLkkAjHs28ICE4",
+      authDomain: "armeliproyecto.firebaseapp.com",
+      databaseURL: "https://armeliproyecto-default-rtdb.firebaseio.com",
+      projectId: "armeliproyecto",
+      storageBucket: "armeliproyecto.firebasestorage.app",
+      messagingSenderId: "248340937949",
+      appId: "1:248340937949:web:d514496a9b7d58fc652f34"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const AUTH_CODE = 'armeli';
+    let esAdmin = false;
+    let productos = [];
+    let carrito = [];
+
+    // Elementos DOM
+    const productosContainer = document.getElementById("productosContainer");
+    const filtroCategorias = document.getElementById("filtro-categorias");
+    const paginacionDiv = document.getElementById("paginacion");
+
+    // Parámetros paginación
+    const ITEMS_POR_PAGINA = 6;
+    let paginaActual = 1;
+    let productosFiltrados = [];
+
+    // Cargar categorías en filtro
+    function cargarCategorias() {
+      const categorias = [...new Set(productos.map(p => p.categoria))].sort();
+      filtroCategorias.innerHTML = `<option value="todos">Todos</option>` +
+        categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // Render productos con paginación y filtro
+    function renderProductos() {
+      productosFiltrados = filtroCategorias.value === "todos"
+        ? productos
+        : productos.filter(p => p.categoria === filtroCategorias.value);
+
+      const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+      const fin = inicio + ITEMS_POR_PAGINA;
+      const productosPagina = productosFiltrados.slice(inicio, fin);
+
+      productosContainer.innerHTML = productosPagina.map(p => `
+        <div class="articulo">
+          <img src="${p.img}" alt="${p.nombre}" loading="lazy" />
+          <h3>${p.nombre}</h3>
+          <div class="precio">$${p.precio.toFixed(2)}</div>
+          <div class="stock-visible ${p.stock > 0 ? '' : 'sin-stock'}">
+            ${p.stock > 0 ? `Stock: ${p.stock}` : 'Sin stock'}
+          </div>
+          ${esAdmin
+            ? `<input type="number" min="0" value="${p.stock}" data-id="${p.id}" class="input-stock-admin" />
+               <input type="number" min="0" step="0.01" value="${p.precio}" data-id="${p.id}" class="input-precio-admin" />`
+            : `<button class="boton" ${p.stock > 0 ? '' : 'disabled'} onclick="agregarAlCarrito('${p.id}')">Agregar</button>`
+          }
+        </div>
+      `).join('');
+
+      renderPaginacion();
+      agregarEventosAdminInputs();
+    }
+
+    // Render paginación
+    function renderPaginacion() {
+      const totalPaginas = Math.ceil(productosFiltrados.length / ITEMS_POR_PAGINA);
+      if (totalPaginas <= 1) {
+        paginacionDiv.innerHTML = '';
+        return;
+      }
+      let html = '';
+      for (let i = 1; i <= totalPaginas; i++) {
+        html += `<button ${i === paginaActual ? 'disabled' : ''} onclick="cambiarPagina(${i})">${i}</button>`;
+      }
+      paginacionDiv.innerHTML = html;
+    }
+
+    function cambiarPagina(num) {
+      paginaActual = num;
+      renderProductos();
+    }
+
+    // Filtrar productos
+    filtroCategorias.addEventListener('change', () => {
+      paginaActual = 1;
+      renderProductos();
+    });
+
+    // Cargar productos de Firebase
+    function cargarProductos() {
+      db.ref('productos').on('value', snapshot => {
+        const data = snapshot.val();
+        productos = [];
+        for (const id in data) {
+          productos.push({...data[id], id});
+        }
+        cargarCategorias();
+        renderProductos();
+        cargarCarritoLocal();
+      });
+    }
+
+    // Agregar al carrito
+    function agregarAlCarrito(id) {
+      const prod = productos.find(p => p.id === id);
+      if (!prod || prod.stock < 1) return alert('Producto sin stock');
+      const enCarrito = carrito.find(c => c.id === id);
+      if (enCarrito) {
+        if (enCarrito.cantidad < prod.stock) {
+          enCarrito.cantidad++;
+        } else {
+          alert('No hay más stock disponible');
+        }
+      } else {
+        carrito.push({id, cantidad: 1});
+      }
+      guardarCarritoLocal();
+      renderCarrito();
+    }
+
+    // Guardar carrito en localStorage
+    function guardarCarritoLocal() {
+      localStorage.setItem('carrito-armeli', JSON.stringify(carrito));
+      actualizarContador();
+      actualizarBotonWhatsApp();
+    }
+
+    // Cargar carrito desde localStorage
+    function cargarCarritoLocal() {
+      const data = localStorage.getItem('carrito-armeli');
+      if (data) {
+        carrito = JSON.parse(data);
+      }
+      renderCarrito();
+      actualizarContador();
+      actualizarBotonWhatsApp();
+    }
+
+    // Render carrito
+    function renderCarrito() {
+      const listaItems = document.getElementById('listaItems');
+      listaItems.innerHTML = '';
+      let total = 0;
+      carrito.forEach(item => {
+        const prod = productos.find(p => p.id === item.id);
+        if (!prod) return;
+        const subtotal = prod.precio * item.cantidad;
+        total += subtotal;
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+          ${prod.nombre} - $${prod.precio.toFixed(2)} x
+          <select onchange="cambiarCantidad('${item.id}', this.value)">
+            ${Array.from({length: prod.stock}, (_, i) => i + 1)
+              .map(num => `<option value="${num}" ${num == item.cantidad ? 'selected' : ''}>${num}</option>`).join('')}
+          </select>
+          = $${subtotal.toFixed(2)}
+          <button onclick="quitarDelCarrito('${item.id}')">X</button>
+        `;
+        listaItems.appendChild(li);
+      });
+      document.getElementById('totalItems').textContent = total.toFixed(2);
+    }
+
+    // Cambiar cantidad en carrito
+    function cambiarCantidad(id, cantidad) {
+      cantidad = parseInt(cantidad);
+      const item = carrito.find(c => c.id === id);
+      const prod = productos.find(p => p.id === id);
+      if (!item || !prod) return;
+      if (cantidad > prod.stock) {
+        alert('No hay suficiente stock');
+        return;
+      }
+      item.cantidad = cantidad;
+      guardarCarritoLocal();
+      renderCarrito();
+    }
+
+    // Quitar del carrito
+    function quitarDelCarrito(id) {
+      carrito = carrito.filter(c => c.id !== id);
+      guardarCarritoLocal();
+      renderCarrito();
+    }
+
+    // Toggle carrito
+    function toggleCarrito() {
+      const carritoLista = document.getElementById('carritoLista');
+      carritoLista.style.display = carritoLista.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Actualizar contador carrito
+    function actualizarContador() {
+      const contador = document.getElementById('contador');
+      const totalCantidad = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+      contador.textContent = totalCantidad;
+    }
+
+    // Actualizar botón WhatsApp
+    function actualizarBotonWhatsApp() {
+      const btn = document.getElementById('btnPedirWhatsApp');
+      btn.disabled = carrito.length === 0;
+    }
+
+    // Pedido por WhatsApp
+    function pedirWhatsApp() {
+      if (carrito.length === 0) return;
+      const numero = '5491164382676';
+      let mensaje = 'Hola, quiero hacer un pedido:%0A';
+      carrito.forEach(item => {
+        const prod = productos.find(p => p.id === item.id);
+        if (prod) {
+          mensaje += `${prod.nombre} - Cantidad: ${item.cantidad}%0A`;
+        }
+      });
+      const url = `https://wa.me/${numero}?text=${mensaje}`;
+      window.open(url, '_blank');
+    }
+
+    // Toggle modo admin
+    const btnAdminToggle = document.getElementById('btnAdminToggle');
+    btnAdminToggle.addEventListener('click', () => {
+      if (!esAdmin) {
+        const clave = prompt('Ingrese clave de administrador:');
+        if (clave === AUTH_CODE) {
+          esAdmin = true;
+          btnAdminToggle.textContent = 'Salir modo administrador';
+        } else {
+          alert('Clave incorrecta');
+          return;
+        }
+      } else {
+        esAdmin = false;
+        btnAdminToggle.textContent = 'Entrar modo administrador';
+      }
+      renderProductos();
+    });
+
+    // Escuchar cambios en inputs admin para stock y precio
+    function agregarEventosAdminInputs() {
+      const inputsStock = document.querySelectorAll('.input-stock-admin');
+      const inputsPrecio = document.querySelectorAll('.input-precio-admin');
+
+      inputsStock.forEach(input => {
+        input.onchange = () => {
+          const id = input.dataset.id;
+          let nuevoStock = parseInt(input.value);
+          if (isNaN(nuevoStock) || nuevoStock < 0) {
+            alert('Stock inválido');
+            renderProductos();
+            return;
+          }
+          // Actualizar stock en Firebase
+          db.ref('productos/' + id).update({ stock: nuevoStock })
+            .catch(() => alert('Error al actualizar stock'));
+        };
+      });
+
+      inputsPrecio.forEach(input => {
+        input.onchange = () => {
+          const id = input.dataset.id;
+          let nuevoPrecio = parseFloat(input.value);
+          if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
+            alert('Precio inválido');
+            renderProductos();
+            return;
+          }
+          // Actualizar precio en Firebase
+          db.ref('productos/' + id).update({ precio: nuevoPrecio })
+            .catch(() => alert('Error al actualizar precio'));
+        };
+      });
+    }
+
+    // Cerrar popup
+    function cerrarPopup() {
+      document.getElementById('popup-overlay').style.display = 'none';
+    }
+
+    // Inicialización
+    window.onload = () => {
+      cargarProductos();
+    };
+  </script>
+</body>
+</html>
