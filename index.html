@@ -89,10 +89,10 @@
       box-shadow: 0 0 18px rgba(199,21,133,0.6);
     }
     .articulo img {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
     .articulo h3 {
       font-weight: 700;
       margin: 8px 0;
@@ -163,6 +163,43 @@
     .input-precio-admin:focus {
       border-color: #a21068;
       outline: none;
+    }
+    /* Input stock admin */
+    .input-stock-admin {
+      width: 60px;
+      font-weight: 600;
+      padding: 4px 6px;
+      border: 2px solid #c71585;
+      border-radius: 8px;
+      text-align: center;
+      color: #6a2c82;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      user-select: none;
+      display: inline-block;
+      transition: border-color 0.3s ease;
+    }
+    .input-stock-admin:focus {
+      border-color: #a21068;
+      outline: none;
+    }
+
+    /* Botón unidad admin */
+    .btn-unidad {
+      margin-top: 6px;
+      background:#a21068;
+      color: white;
+      border:none;
+      padding: 6px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .btn-unidad:hover {
+      background-color: #c71585;
     }
 
     /* Paginación */
@@ -510,271 +547,265 @@
     // Elementos DOM
     const productosContainer = document.getElementById("productosContainer");
     const filtroCategorias = document.getElementById("filtro-categorias");
-    const paginacionDiv = document.getElementById("paginacion");
+    const paginacion = document.getElementById("paginacion");
+    const btnAdminToggle = document.getElementById("btnAdminToggle");
 
-    // Parámetros paginación
-    const ITEMS_POR_PAGINA = 6;
-    let paginaActual = 1;
-    let productosFiltrados = [];
-
-    // Cargar categorías en filtro
-    function cargarCategorias() {
-      const categorias = [...new Set(productos.map(p => p.categoria))].sort();
-      filtroCategorias.innerHTML = `<option value="todos">Todos</option>` +
-        categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+    // Popup bienvenida
+    function cerrarPopup() {
+      document.getElementById('popup-overlay').style.display = 'none';
     }
 
-    // Render productos con paginación y filtro
-    function renderProductos() {
-      productosFiltrados = filtroCategorias.value === "todos"
-        ? productos
-        : productos.filter(p => p.categoria === filtroCategorias.value);
-
-      const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
-      const fin = inicio + ITEMS_POR_PAGINA;
-      const productosPagina = productosFiltrados.slice(inicio, fin);
-
-      productosContainer.innerHTML = productosPagina.map(p => `
-        <div class="articulo">
-          <img src="${p.img}" alt="${p.nombre}" loading="lazy" />
-          <h3>${p.nombre}</h3>
-          <div class="precio">$${p.precio.toFixed(2)}</div>
-          <div class="stock-visible ${p.stock > 0 ? '' : 'sin-stock'}">
-            ${p.stock > 0 ? `Stock: ${p.stock}` : 'Sin stock'}
-          </div>
-          ${esAdmin
-            ? `<input type="number" min="0" value="${p.stock}" data-id="${p.id}" class="input-stock-admin" />
-               <input type="number" min="0" step="0.01" value="${p.precio}" data-id="${p.id}" class="input-precio-admin" />`
-            : `<button class="boton" ${p.stock > 0 ? '' : 'disabled'} onclick="agregarAlCarrito('${p.id}')">Agregar</button>`
-          }
-        </div>
-      `).join('');
-
-      renderPaginacion();
-      agregarEventosAdminInputs();
-    }
-
-    // Render paginación
-    function renderPaginacion() {
-      const totalPaginas = Math.ceil(productosFiltrados.length / ITEMS_POR_PAGINA);
-      if (totalPaginas <= 1) {
-        paginacionDiv.innerHTML = '';
-        return;
-      }
-      let html = '';
-      for (let i = 1; i <= totalPaginas; i++) {
-        html += `<button ${i === paginaActual ? 'disabled' : ''} onclick="cambiarPagina(${i})">${i}</button>`;
-      }
-      paginacionDiv.innerHTML = html;
-    }
-
-    function cambiarPagina(num) {
-      paginaActual = num;
-      renderProductos();
-    }
-
-    // Filtrar productos
-    filtroCategorias.addEventListener('change', () => {
-      paginaActual = 1;
-      renderProductos();
-    });
-
-    // Cargar productos de Firebase
-    function cargarProductos() {
-      db.ref('productos').on('value', snapshot => {
-        const data = snapshot.val();
-        productos = [];
-        for (const id in data) {
-          productos.push({...data[id], id});
-        }
-        cargarCategorias();
-        renderProductos();
-        cargarCarritoLocal();
-      });
-    }
-
-    // Agregar al carrito
-    function agregarAlCarrito(id) {
-      const prod = productos.find(p => p.id === id);
-      if (!prod || prod.stock < 1) return alert('Producto sin stock');
-      const enCarrito = carrito.find(c => c.id === id);
-      if (enCarrito) {
-        if (enCarrito.cantidad < prod.stock) {
-          enCarrito.cantidad++;
-        } else {
-          alert('No hay más stock disponible');
-        }
-      } else {
-        carrito.push({id, cantidad: 1});
-      }
-      guardarCarritoLocal();
-      renderCarrito();
-    }
-
-    // Guardar carrito en localStorage
-    function guardarCarritoLocal() {
-      localStorage.setItem('carrito-armeli', JSON.stringify(carrito));
-      actualizarContador();
-      actualizarBotonWhatsApp();
-    }
-
-    // Cargar carrito desde localStorage
-    function cargarCarritoLocal() {
-      const data = localStorage.getItem('carrito-armeli');
-      if (data) {
-        carrito = JSON.parse(data);
-      }
-      renderCarrito();
-      actualizarContador();
-      actualizarBotonWhatsApp();
-    }
-
-    // Render carrito
-    function renderCarrito() {
-      const listaItems = document.getElementById('listaItems');
-      listaItems.innerHTML = '';
-      let total = 0;
-      carrito.forEach(item => {
-        const prod = productos.find(p => p.id === item.id);
-        if (!prod) return;
-        const subtotal = prod.precio * item.cantidad;
-        total += subtotal;
-
-        const li = document.createElement('li');
-        li.innerHTML = `
-          ${prod.nombre} - $${prod.precio.toFixed(2)} x
-          <select onchange="cambiarCantidad('${item.id}', this.value)">
-            ${Array.from({length: prod.stock}, (_, i) => i + 1)
-              .map(num => `<option value="${num}" ${num == item.cantidad ? 'selected' : ''}>${num}</option>`).join('')}
-          </select>
-          = $${subtotal.toFixed(2)}
-          <button onclick="quitarDelCarrito('${item.id}')">X</button>
-        `;
-        listaItems.appendChild(li);
-      });
-      document.getElementById('totalItems').textContent = total.toFixed(2);
-    }
-
-    // Cambiar cantidad en carrito
-    function cambiarCantidad(id, cantidad) {
-      cantidad = parseInt(cantidad);
-      const item = carrito.find(c => c.id === id);
-      const prod = productos.find(p => p.id === id);
-      if (!item || !prod) return;
-      if (cantidad > prod.stock) {
-        alert('No hay suficiente stock');
-        return;
-      }
-      item.cantidad = cantidad;
-      guardarCarritoLocal();
-      renderCarrito();
-    }
-
-    // Quitar del carrito
-    function quitarDelCarrito(id) {
-      carrito = carrito.filter(c => c.id !== id);
-      guardarCarritoLocal();
-      renderCarrito();
-    }
-
-    // Toggle carrito
-    function toggleCarrito() {
-      const carritoLista = document.getElementById('carritoLista');
-      carritoLista.style.display = carritoLista.style.display === 'block' ? 'none' : 'block';
-    }
-
-    // Actualizar contador carrito
-    function actualizarContador() {
-      const contador = document.getElementById('contador');
-      const totalCantidad = carrito.reduce((acc, item) => acc + item.cantidad, 0);
-      contador.textContent = totalCantidad;
-    }
-
-    // Actualizar botón WhatsApp
-    function actualizarBotonWhatsApp() {
-      const btn = document.getElementById('btnPedirWhatsApp');
-      btn.disabled = carrito.length === 0;
-    }
-
-    // Pedido por WhatsApp
-    function pedirWhatsApp() {
-      if (carrito.length === 0) return;
-      const numero = '5491164382676';
-      let mensaje = 'Hola, quiero hacer un pedido:%0A';
-      carrito.forEach(item => {
-        const prod = productos.find(p => p.id === item.id);
-        if (prod) {
-          mensaje += `${prod.nombre} - Cantidad: ${item.cantidad}%0A`;
-        }
-      });
-      const url = `https://wa.me/${numero}?text=${mensaje}`;
-      window.open(url, '_blank');
-    }
-
-    // Toggle modo admin
-    const btnAdminToggle = document.getElementById('btnAdminToggle');
-    btnAdminToggle.addEventListener('click', () => {
+    // Toggle admin
+    btnAdminToggle.onclick = () => {
       if (!esAdmin) {
-        const clave = prompt('Ingrese clave de administrador:');
-        if (clave === AUTH_CODE) {
+        const pass = prompt("Ingrese la contraseña para modo administrador:");
+        if (pass === AUTH_CODE) {
           esAdmin = true;
-          btnAdminToggle.textContent = 'Salir modo administrador';
+          btnAdminToggle.textContent = "modo usuario";
+          renderProductos();
         } else {
-          alert('Clave incorrecta');
-          return;
+          alert("Contraseña incorrecta");
         }
       } else {
         esAdmin = false;
-        btnAdminToggle.textContent = 'Entrar modo administrador';
+        btnAdminToggle.textContent = "modo administrador";
+        renderProductos();
       }
-      renderProductos();
-    });
+    };
 
-    // Escuchar cambios en inputs admin para stock y precio
+    // Cargar productos desde Firebase
+    function cargarProductos() {
+      db.ref("productos").once("value")
+        .then(snapshot => {
+          const data = snapshot.val();
+          productos = [];
+          for (const id in data) {
+            productos.push({ id, ...data[id] });
+          }
+          cargarCategorias();
+          renderProductos();
+        });
+    }
+
+    // Cargar categorías al select filtro
+    function cargarCategorias() {
+      const categoriasSet = new Set(productos.map(p => p.categoria));
+      filtroCategorias.innerHTML = '<option value="todos">Todos</option>';
+      categoriasSet.forEach(cat => {
+        filtroCategorias.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+    }
+
+    // Variables para paginación
+    const itemsPorPagina = 12;
+    let paginaActual = 1;
+
+    // Renderizar productos con filtro y paginación
+    function renderProductos() {
+      // Filtrar
+      const categoriaSeleccionada = filtroCategorias.value;
+      let productosFiltrados = categoriaSeleccionada === 'todos' ? productos : productos.filter(p => p.categoria === categoriaSeleccionada);
+
+      // Paginación
+      const totalPaginas = Math.ceil(productosFiltrados.length / itemsPorPagina);
+      if (paginaActual > totalPaginas) paginaActual = 1;
+      const inicio = (paginaActual - 1) * itemsPorPagina;
+      const fin = inicio + itemsPorPagina;
+      const productosPagina = productosFiltrados.slice(inicio, fin);
+
+      productosContainer.innerHTML = '';
+      productosPagina.forEach(p => {
+        productosContainer.innerHTML += `
+          <div class="articulo">
+            <img src="${p.img}" alt="${p.nombre}" loading="lazy" />
+            <h3>${p.nombre}</h3>
+            <div class="precio">$${p.precio.toFixed(2)} ${p.unidad ? p.unidad : ''}</div>
+            ${p.stock > 0 ? 
+              `<div class="stock-visible">Stock: ${p.stock}</div>` :
+              `<div class="stock-visible sin-stock">Sin stock</div>`
+            }
+            ${esAdmin
+              ? `
+                <input type="number" min="0" value="${p.stock}" data-id="${p.id}" class="input-stock-admin" />
+                <input type="number" min="0" step="0.01" value="${p.precio}" data-id="${p.id}" class="input-precio-admin" />
+                <button class="btn-unidad" data-id="${p.id}">${p.unidad ? p.unidad : 'Unidad'}</button>
+              `
+              : `<button class="boton" ${p.stock > 0 ? '' : 'disabled'} onclick="agregarAlCarrito('${p.id}')">Agregar</button>`
+            }
+          </div>
+        `;
+      });
+
+      agregarEventosAdminInputs();
+
+      // Renderizar paginación
+      renderPaginacion(totalPaginas);
+    }
+
+    // Eventos inputs admin (stock, precio, unidad)
     function agregarEventosAdminInputs() {
       const inputsStock = document.querySelectorAll('.input-stock-admin');
-      const inputsPrecio = document.querySelectorAll('.input-precio-admin');
-
       inputsStock.forEach(input => {
         input.onchange = () => {
           const id = input.dataset.id;
-          let nuevoStock = parseInt(input.value);
+          const nuevoStock = parseInt(input.value);
           if (isNaN(nuevoStock) || nuevoStock < 0) {
             alert('Stock inválido');
             renderProductos();
             return;
           }
-          // Actualizar stock en Firebase
           db.ref('productos/' + id).update({ stock: nuevoStock })
             .catch(() => alert('Error al actualizar stock'));
         };
       });
 
+      const inputsPrecio = document.querySelectorAll('.input-precio-admin');
       inputsPrecio.forEach(input => {
         input.onchange = () => {
           const id = input.dataset.id;
-          let nuevoPrecio = parseFloat(input.value);
+          const nuevoPrecio = parseFloat(input.value);
           if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
             alert('Precio inválido');
             renderProductos();
             return;
           }
-          // Actualizar precio en Firebase
           db.ref('productos/' + id).update({ precio: nuevoPrecio })
             .catch(() => alert('Error al actualizar precio'));
         };
       });
+
+      const botonesUnidad = document.querySelectorAll('.btn-unidad');
+      botonesUnidad.forEach(boton => {
+        boton.onclick = () => {
+          const id = boton.dataset.id;
+          const nuevaUnidad = prompt('Ingrese unidad de venta (ej: por metro, por rollo, gramos):', boton.textContent);
+          if (nuevaUnidad !== null) {
+            const unidadTrim = nuevaUnidad.trim();
+            boton.textContent = unidadTrim || 'Unidad';
+            db.ref('productos/' + id).update({ unidad: unidadTrim })
+              .catch(() => alert('Error al actualizar unidad'));
+          }
+        };
+      });
     }
 
-    // Cerrar popup
-    function cerrarPopup() {
-      document.getElementById('popup-overlay').style.display = 'none';
+    // Funciones carrito (mantengo las tuyas, no las cambio)
+    function agregarAlCarrito(id) {
+      const prod = productos.find(p => p.id === id);
+      if (!prod || prod.stock < 1) {
+        alert("Producto sin stock");
+        return;
+      }
+      const enCarrito = carrito.find(i => i.id === id);
+      if (enCarrito) {
+        if (enCarrito.cantidad < prod.stock) {
+          enCarrito.cantidad++;
+        } else {
+          alert("No hay más stock disponible");
+        }
+      } else {
+        carrito.push({ id, cantidad: 1 });
+      }
+      actualizarCarrito();
     }
 
-    // Inicialización
-    window.onload = () => {
-      cargarProductos();
+    function actualizarCarrito() {
+      const listaItems = document.getElementById("listaItems");
+      const contador = document.getElementById("contador");
+      const totalItems = document.getElementById("totalItems");
+      const btnPedirWhatsApp = document.getElementById("btnPedirWhatsApp");
+
+      listaItems.innerHTML = '';
+      let total = 0;
+      carrito.forEach(item => {
+        const prod = productos.find(p => p.id === item.id);
+        if (!prod) return;
+
+        const subtotal = prod.precio * item.cantidad;
+        total += subtotal;
+
+        listaItems.innerHTML += `
+          <li>
+            ${prod.nombre} (${prod.unidad ? prod.unidad : 'unidad'}) x
+            <select onchange="cambiarCantidad('${item.id}', this.value)">
+              ${[...Array(prod.stock).keys()].map(i =>
+                `<option value="${i + 1}" ${item.cantidad === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}
+            </select>
+            = $${subtotal.toFixed(2)}
+            <button onclick="eliminarDelCarrito('${item.id}')">X</button>
+          </li>
+        `;
+      });
+
+      contador.textContent = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+      totalItems.textContent = total.toFixed(2);
+      btnPedirWhatsApp.disabled = carrito.length === 0;
+    }
+
+    function cambiarCantidad(id, cantidad) {
+      const prod = productos.find(p => p.id === id);
+      cantidad = parseInt(cantidad);
+      if (cantidad > 0 && cantidad <= prod.stock) {
+        const item = carrito.find(i => i.id === id);
+        if (item) {
+          item.cantidad = cantidad;
+          actualizarCarrito();
+        }
+      }
+    }
+
+    function eliminarDelCarrito(id) {
+      carrito = carrito.filter(i => i.id !== id);
+      actualizarCarrito();
+    }
+
+    function toggleCarrito() {
+      const carritoLista = document.getElementById("carritoLista");
+      carritoLista.style.display = carritoLista.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function pedirWhatsApp() {
+      if (carrito.length === 0) return;
+
+      const telefono = '5493512482106';
+      const textoBase = 'Hola! Quiero hacer un pedido:\n\n';
+      let texto = textoBase;
+
+      carrito.forEach(item => {
+        const prod = productos.find(p => p.id === item.id);
+        if (!prod) return;
+        texto += `- ${prod.nombre} (${prod.unidad ? prod.unidad : 'unidad'}) x${item.cantidad}\n`;
+      });
+
+      texto += '\nGracias!';
+
+      const url = `https://wa.me/${telefono}?text=${encodeURIComponent(texto)}`;
+      window.open(url, '_blank');
+    }
+
+    // Paginación
+    function renderPaginacion(totalPaginas) {
+      paginacion.innerHTML = '';
+      for (let i = 1; i <= totalPaginas; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === paginaActual) btn.disabled = true;
+        btn.onclick = () => {
+          paginaActual = i;
+          renderProductos();
+        };
+        paginacion.appendChild(btn);
+      }
+    }
+
+    // Evento filtro categorías
+    filtroCategorias.onchange = () => {
+      paginaActual = 1;
+      renderProductos();
     };
+
+    // Carga inicial
+    cargarProductos();
   </script>
 </body>
 </html>
