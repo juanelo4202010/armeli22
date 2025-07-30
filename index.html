@@ -116,7 +116,12 @@
     .sin-stock {
       color: #b53030;
     }
-
+.unidad-publica {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6a2c82;
+  margin-bottom: 8px;
+}
     /* Botones */
     button.boton, .btn-stock-admin {
       cursor: pointer;
@@ -600,39 +605,41 @@
     const itemsPorPagina = 12;
     let paginaActual = 1;
 
-    // Renderizar productos con filtro y paginación
     function renderProductos() {
-      // Filtrar
-      const categoriaSeleccionada = filtroCategorias.value;
-      let productosFiltrados = categoriaSeleccionada === 'todos' ? productos : productos.filter(p => p.categoria === categoriaSeleccionada);
+  // Filtrar
+  const categoriaSeleccionada = filtroCategorias.value;
+  let productosFiltrados = categoriaSeleccionada === 'todos' ? productos : productos.filter(p => p.categoria === categoriaSeleccionada);
 
-      // Paginación
-      const totalPaginas = Math.ceil(productosFiltrados.length / itemsPorPagina);
-      if (paginaActual > totalPaginas) paginaActual = 1;
-      const inicio = (paginaActual - 1) * itemsPorPagina;
-      const fin = inicio + itemsPorPagina;
-      const productosPagina = productosFiltrados.slice(inicio, fin);
+  // Paginación
+  const totalPaginas = Math.ceil(productosFiltrados.length / itemsPorPagina);
+  if (paginaActual > totalPaginas) paginaActual = 1;
+  const inicio = (paginaActual - 1) * itemsPorPagina;
+  const fin = inicio + itemsPorPagina;
+  const productosPagina = productosFiltrados.slice(inicio, fin);
 
-      productosContainer.innerHTML = '';
-      productosPagina.forEach(p => {
-        productosContainer.innerHTML += `
-          <div class="articulo">
-            <img src="${p.img}" alt="${p.nombre}" loading="lazy" />
-            <h3>${p.nombre}</h3>
-            <div class="precio">$${p.precio.toFixed(2)} ${p.unidad ? p.unidad : ''}</div>
-            ${p.stock > 0 ? 
-              `<div class="stock-visible">Stock: ${p.stock}</div>` :
-              `<div class="stock-visible sin-stock">Sin stock</div>`
-            }
-            ${esAdmin
-              ? `
-                <input type="number" min="0" value="${p.stock}" data-id="${p.id}" class="input-stock-admin" />
-                <input type="number" min="0" step="0.01" value="${p.precio}" data-id="${p.id}" class="input-precio-admin" />
-                <button class="btn-unidad" data-id="${p.id}">${p.unidad ? p.unidad : 'Unidad'}</button>
-              `
-              : `<button class="boton" ${p.stock > 0 ? '' : 'disabled'} onclick="agregarAlCarrito('${p.id}')">Agregar</button>`
-            }
-          </div>
+  productosContainer.innerHTML = '';
+  productosPagina.forEach(p => {
+    productosContainer.innerHTML += `
+      <div class="articulo">
+        <img src="${p.img}" alt="${p.nombre}" loading="lazy" />
+        <h3>${p.nombre}</h3>
+        <div class="precio">$${p.precio.toFixed(2)}</div>
+        ${!esAdmin && p.unidad ? `<div class="unidad-publica">${p.unidad}</div>` : ''}
+        ${
+          p.stock > 0
+            ? `<div class="stock-visible">Stock: ${p.stock}</div>`
+            : `<div class="stock-visible sin-stock">Sin stock</div>`
+        }
+        ${
+          esAdmin
+            ? `
+              <input type="number" min="0" value="${p.stock}" data-id="${p.id}" class="input-stock-admin" />
+              <input type="number" min="0" step="0.01" value="${p.precio}" data-id="${p.id}" class="input-precio-admin" />
+              <button class="btn-unidad" data-id="${p.id}">${p.unidad ? p.unidad : 'Unidad'}</button>
+            `
+            : `<button class="boton" ${p.stock > 0 ? '' : 'disabled'} onclick="agregarAlCarrito('${p.id}')">Agregar</button>`
+        }
+      </div>
         `;
       });
 
@@ -767,7 +774,7 @@
     function pedirWhatsApp() {
       if (carrito.length === 0) return;
 
-      const telefono ='3584222505';
+      const telefono = '543584222505';
       const textoBase = 'Hola! Quiero hacer un pedido:\n\n';
       let texto = textoBase;
 
