@@ -622,7 +622,10 @@
     function renderProductos() {
   // Filtrar
   const categoriaSeleccionada = filtroCategorias.value;
-  let productosFiltrados;
+ // Filtrar
+const categoriaSeleccionada = filtroCategorias.value;
+let productosFiltrados;
+
 if (categoriaSeleccionada === 'todos') {
   const ordenCategorias = [
     "HILOS",
@@ -635,10 +638,12 @@ if (categoriaSeleccionada === 'todos') {
     "FORNITURAS-BOLITAS DE METAL",
     "LETRAS",
     "MADERA",
-    "HILOS x ROLLO"
+    "HILOS x ROLLO",
+    "DIJES",
+    "DIJES SILICONA"
   ];
 
-  // Normaliza la cadena para comparación
+  // Función para normalizar texto (evita errores por mayúsculas o guiones)
   function normalizar(str) {
     return str.toLowerCase().replace(/\s+/g, ' ').trim().replace(/-/g, '');
   }
@@ -860,6 +865,7 @@ if (categoriaSeleccionada === 'todos') {
   </script>
 </body>
 </html>
+
 
 
 
