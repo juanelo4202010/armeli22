@@ -627,18 +627,28 @@ if (categoriaSeleccionada === 'todos') {
   const ordenCategorias = [
     "HILOS",
     "HILOS SEDIFICADOS",
-    "BOLITAS VARIADAS",
-    "FORMAS Y PASTILLAS",
-    "Fornituras-Bolitas de metal",
-    "LETRAS",
-    "MADERAS",
     "MOSTACILLON Y MOSTACILLAS",
     "FIMOS DE COLORES",
-    "FIMOS DE FIGURAS",
+    "FIMOS FIGURAS",
+    "BOLITAS VARIADAS",
+    "FORMAS Y PASTILLAS",
+    "FORNITURAS-BOLITAS DE METAL",
+    "LETRAS",
+    "MADERA",
     "HILOS x ROLLO"
   ];
+
+  // Normaliza la cadena para comparación
+  function normalizar(str) {
+    return str.toLowerCase().replace(/\s+/g, ' ').trim().replace(/-/g, '');
+  }
+
+  const ordenCategoriasNorm = ordenCategorias.map(normalizar);
+
   productosFiltrados = productos.slice().sort((a, b) => {
-    return ordenCategorias.indexOf(a.categoria) - ordenCategorias.indexOf(b.categoria);
+    const catA = normalizar(a.categoria);
+    const catB = normalizar(b.categoria);
+    return ordenCategoriasNorm.indexOf(catA) - ordenCategoriasNorm.indexOf(catB);
   });
 } else {
   productosFiltrados = productos.filter(p => p.categoria === categoriaSeleccionada);
@@ -850,6 +860,7 @@ if (categoriaSeleccionada === 'todos') {
   </script>
 </body>
 </html>
+
 
 
 
